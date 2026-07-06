@@ -1,0 +1,82 @@
+# Render Blueprint — API + Agent + Postgres
+# Dashboard: New → Blueprint → connect this repo → apply
+#
+# After deploy, set sync:false env vars in each service (see README).
+
+databases:
+  - name: agent-demo-db
+    plan: free
+    databaseName: agent_demo
+    user: agent_demo
+
+services:
+  # ── 1. FastAPI (public HTTP) ──────────────────────────────────────────────
+  - type: web
+    name: agent-demo-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: agent-demo-db
+          property: connectionString
+      - key: LIVEKIT_URL
+        sync: false
+      - key: LIVEKIT_API_KEY
+        sync: false
+      - key: LIVEKIT_API_SECRET
+        sync: false
+      - key: AGENT_NAME
+        value: voice-agent
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_LLM_MODEL
+        value: openai/gpt-oss-120b
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        sync: false
+      - key: USER_TIMEZONE
+        value: Asia/Kolkata
+
+  # ── 2. LiveKit agent worker (no HTTP — stays connected to LiveKit) ────────
+  # Free plan is not available for workers; use starter ($7/mo) or see README
+  # for running both processes on the single API web service (free-tier hack).
+  - type: worker
+    name: agent-demo-agent
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerCommand: python agent.py start
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: agent-demo-db
+          property: connectionString
+      - key: LIVEKIT_URL
+        sync: false
+      - key: LIVEKIT_API_KEY
+        sync: false
+      - key: LIVEKIT_API_SECRET
+        sync: false
+      - key: AGENT_NAME
+        value: voice-agent
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_LLM_MODEL
+        value: openai/gpt-oss-120b
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: USER_TIMEZONE
+        value: Asia/Kolkata

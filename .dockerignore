@@ -1,0 +1,11 @@
+venv
+.venv
+__pycache__
+*.pyc
+.git
+.env
+data
+frontend
+node_modules
+*.md
+.cursor
