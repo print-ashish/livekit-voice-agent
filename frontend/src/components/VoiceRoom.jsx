@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Room, RoomEvent, Track } from "livekit-client";
 import { getLiveKitToken } from "../api";
+import ChatTranscript from "./ChatTranscript";
 import { MicIcon, WaveIcon } from "./Icons";
 
 const STATES = {
@@ -11,9 +12,26 @@ const STATES = {
   error: { label: "Error", detail: "" },
 };
 
+function upsertTranscript(messages, segment, role) {
+  const idx = messages.findIndex((m) => m.id === segment.id);
+  const entry = {
+    id: segment.id,
+    role,
+    text: segment.text,
+    final: segment.final,
+  };
+  if (idx >= 0) {
+    const next = [...messages];
+    next[idx] = entry;
+    return next;
+  }
+  return [...messages, entry];
+}
+
 export default function VoiceRoom() {
   const [state, setState] = useState("idle");
   const [detail, setDetail] = useState(STATES.idle.detail);
+  const [messages, setMessages] = useState([]);
   const roomRef = useRef(null);
   const audioRef = useRef(null);
 
@@ -30,9 +48,18 @@ export default function VoiceRoom() {
     audioRef.current.appendChild(el);
   }
 
+  function handleTranscription(segments, participant) {
+    if (!participant) return;
+    const role = participant.isLocal ? "user" : "agent";
+    setMessages((prev) =>
+      segments.reduce((acc, segment) => upsertTranscript(acc, segment, role), prev),
+    );
+  }
+
   async function connect() {
     try {
       setVoiceState("connecting");
+      setMessages([]);
       const { token, url, room: roomName } = await getLiveKitToken();
 
       if (audioRef.current) audioRef.current.innerHTML = "";
@@ -57,6 +84,8 @@ export default function VoiceRoom() {
         if (!participant.isLocal) attachAudio(track, participant.identity);
       });
 
+      room.on(RoomEvent.TranscriptionReceived, handleTranscription);
+
       room.on(RoomEvent.Disconnected, () => {
         setVoiceState("idle");
       });
@@ -79,43 +108,47 @@ export default function VoiceRoom() {
   const statusLabel = state === "error" ? "Error" : STATES[state]?.label ?? "Ready";
 
   return (
-    <div className="voice-panel">
-      <div className="voice-orb-wrap" data-state={state}>
-        <div className="voice-orb-ring" />
-        <button
-          type="button"
-          className="voice-orb"
-          onClick={() => connect()}
-          disabled={isLive}
-          aria-label={isLive ? "Session active" : "Start voice session"}
-        >
-          {state === "listening" ? <WaveIcon /> : <MicIcon />}
-        </button>
+    <>
+      <ChatTranscript messages={messages} isLive={isLive} />
+
+      <div className="voice-panel">
+        <div className="voice-orb-wrap" data-state={state}>
+          <div className="voice-orb-ring" />
+          <button
+            type="button"
+            className="voice-orb"
+            onClick={() => connect()}
+            disabled={isLive}
+            aria-label={isLive ? "Session active" : "Start voice session"}
+          >
+            {state === "listening" ? <WaveIcon /> : <MicIcon />}
+          </button>
+        </div>
+
+        <div className="status-row">
+          <span
+            className={`status-dot ${
+              state === "listening"
+                ? "status-dot--live"
+                : state === "connecting" || state === "connected"
+                  ? "status-dot--connecting"
+                  : state === "error"
+                    ? "status-dot--error"
+                    : ""
+            }`}
+          />
+          <span className="status-label">{statusLabel}</span>
+        </div>
+        <p className="status-detail">{detail}</p>
+
+        {isLive && (
+          <button type="button" className="btn btn-ghost disconnect-btn" onClick={disconnect}>
+            End session
+          </button>
+        )}
+
+        <div ref={audioRef} style={{ display: "none" }} aria-hidden />
       </div>
-
-      <div className="status-row">
-        <span
-          className={`status-dot ${
-            state === "listening"
-              ? "status-dot--live"
-              : state === "connecting" || state === "connected"
-                ? "status-dot--connecting"
-                : state === "error"
-                  ? "status-dot--error"
-                  : ""
-          }`}
-        />
-        <span className="status-label">{statusLabel}</span>
-      </div>
-      <p className="status-detail">{detail}</p>
-
-      {isLive && (
-        <button type="button" className="btn btn-ghost disconnect-btn" onClick={disconnect}>
-          End session
-        </button>
-      )}
-
-      <div ref={audioRef} style={{ display: "none" }} aria-hidden />
-    </div>
+    </>
   );
 }
