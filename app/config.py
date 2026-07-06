@@ -47,5 +47,16 @@ GROQ_LLM_MODEL = os.getenv("GROQ_LLM_MODEL", "openai/gpt-oss-120b")
 GROQ_TTS_MODEL = os.getenv("GROQ_TTS_MODEL", "canopylabs/orpheus-v1-english")
 GROQ_TTS_VOICE = os.getenv("GROQ_TTS_VOICE", "autumn")
 
+# Turn-taking latency (LiveKit) — lower = snappier, may cut off slow speakers
+AGENT_ENDPOINTING_MIN = float(os.getenv("AGENT_ENDPOINTING_MIN", "0.2"))
+AGENT_ENDPOINTING_MAX = float(os.getenv("AGENT_ENDPOINTING_MAX", "0.8"))
+AGENT_PREEMPTIVE_TTS = os.getenv("AGENT_PREEMPTIVE_TTS", "true").lower() in (
+    "1",
+    "true",
+    "yes",
+)
+AGENT_VAD_ACTIVATION = float(os.getenv("AGENT_VAD_ACTIVATION", "0.4"))
+AGENT_VAD_MIN_SILENCE = float(os.getenv("AGENT_VAD_MIN_SILENCE", "0.25"))
+
 # Calendar / voice assistant timezone
 USER_TIMEZONE = os.getenv("USER_TIMEZONE", "Asia/Kolkata")
