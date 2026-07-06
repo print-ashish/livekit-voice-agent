@@ -29,7 +29,7 @@ init_db()
 
 server = AgentServer(
     job_executor_type=JobExecutorType.THREAD,
-    num_idle_processes=0,
+    num_idle_processes=1,
     initialize_process_timeout=60.0,
     load_threshold=1.0
 )
