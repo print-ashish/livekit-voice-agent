@@ -5,10 +5,9 @@ from livekit import agents
 from livekit.agents import AgentServer, AgentSession
 from livekit.plugins import groq
 
-from app.config import AGENT_NAME, GROQ_LLM_MODEL
+from app.config import AGENT_NAME, GROQ_LLM_MODEL, GROQ_TTS_MODEL, GROQ_TTS_VOICE
 from app.database import init_db
 from assistant import VoiceAssistant
-from edge_tts_plugin import EdgeTTS
 
 load_dotenv()
 init_db()
@@ -31,7 +30,7 @@ async def voice_agent(ctx: agents.JobContext):
     session = AgentSession(
         stt=groq.STT(model="whisper-large-v3-turbo"),
         llm=groq.LLM(model=GROQ_LLM_MODEL),
-        tts=EdgeTTS(),
+        tts=groq.TTS(model=GROQ_TTS_MODEL, voice=GROQ_TTS_VOICE),
     )
 
     await session.start(room=ctx.room, agent=assistant)

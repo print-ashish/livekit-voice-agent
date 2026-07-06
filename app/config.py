@@ -42,8 +42,10 @@ AGENT_NAME = os.getenv("AGENT_NAME", "voice-agent")
 # Frontend
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
-# Groq LLM
+# Groq LLM + TTS
 GROQ_LLM_MODEL = os.getenv("GROQ_LLM_MODEL", "openai/gpt-oss-120b")
+GROQ_TTS_MODEL = os.getenv("GROQ_TTS_MODEL", "canopylabs/orpheus-v1-english")
+GROQ_TTS_VOICE = os.getenv("GROQ_TTS_VOICE", "autumn")
 
 # Calendar / voice assistant timezone
 USER_TIMEZONE = os.getenv("USER_TIMEZONE", "Asia/Kolkata")
