@@ -1,0 +1,10 @@
+# Agent worker — set as "Config file path" in Railway service settings
+# No HTTP; stays connected to LiveKit Cloud
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "python agent.py start"
+restartPolicyType = "ON_FAILURE"

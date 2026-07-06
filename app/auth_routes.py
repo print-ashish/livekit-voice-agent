@@ -112,9 +112,15 @@ async def auth_callback(
     db.commit()
     db.refresh(user)
 
-    response = RedirectResponse(f"{FRONTEND_URL}/assistant")
+    jwt_token = create_token(user.id)
+    # Cross-origin frontends (localhost/Vercel + Railway API) can't use cookies in Chrome.
+    redirect_url = f"{FRONTEND_URL}/assistant"
+    if GOOGLE_REDIRECT_URI.startswith("https://"):
+        redirect_url = f"{FRONTEND_URL}/assistant?token={jwt_token}"
+
+    response = RedirectResponse(redirect_url)
     response.set_cookie(
-        value=create_token(user.id),
+        value=jwt_token,
         max_age=60 * 60 * 24,
         **cookie_kwargs(),
     )

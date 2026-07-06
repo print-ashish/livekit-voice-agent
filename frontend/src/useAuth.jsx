@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { getMe, logout as apiLogout } from "./api";
+import { clearToken, getMe, logout as apiLogout, setToken } from "./api";
 
 const AuthContext = createContext(null);
 
@@ -8,9 +8,22 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+    if (token) {
+      setToken(token);
+      params.delete("token");
+      const qs = params.toString();
+      const cleanUrl = window.location.pathname + (qs ? `?${qs}` : "");
+      window.history.replaceState({}, "", cleanUrl);
+    }
+
     getMe()
       .then(setUser)
-      .catch(() => setUser(null))
+      .catch(() => {
+        clearToken();
+        setUser(null);
+      })
       .finally(() => setLoading(false));
   }, []);
 

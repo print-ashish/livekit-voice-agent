@@ -168,3 +168,62 @@ Run API + agent in **one** container (demo only):
 
 # Test voice: login on Vercel → tap mic → agent should join within a few seconds
 ```
+
+## Deploy on Railway (API + Agent)
+
+Same architecture as Render — **two services + Postgres**, same [`Dockerfile`](Dockerfile).
+
+| Service | Config file | Start command |
+|---------|-------------|---------------|
+| `agent-demo-api` | [`railway.api.toml`](railway.api.toml) | `uvicorn app.main:app` |
+| `agent-demo-agent` | [`railway.agent.toml`](railway.agent.toml) | `python agent.py start` |
+| Postgres | Railway plugin | `DATABASE_URL` shared |
+
+### Steps
+
+1. [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub** → select this repo.
+2. **Add Postgres:** Project → **+ New** → **Database** → **PostgreSQL**.
+3. **Add API service** (if not auto-created):
+   - **+ New** → **GitHub Repo** → same repo
+   - **Settings** → **Config file path** → `railway.api.toml`
+   - **Settings** → **Networking** → **Generate Domain**
+4. **Add Agent service:**
+   - **+ New** → **GitHub Repo** → same repo again
+   - **Settings** → **Config file path** → `railway.agent.toml`
+   - No public domain needed (worker has no HTTP)
+5. **Link Postgres to both services:**
+   - Open API service → **Variables** → **Add Reference** → `DATABASE_URL` from Postgres
+   - Same on Agent service
+6. **Set env vars** on both services:
+
+   ```
+   LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET
+   GROQ_API_KEY, GROQ_LLM_MODEL=openai/gpt-oss-120b
+   AGENT_NAME=voice-agent
+   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+   USER_TIMEZONE=Asia/Kolkata
+   ```
+
+   API only:
+
+   ```
+   FRONTEND_URL=https://your-app.vercel.app
+   GOOGLE_REDIRECT_URI=https://<api-domain>.up.railway.app/auth/callback
+   JWT_SECRET=<random-secret>
+   ```
+
+7. **Google Console** — redirect URI + JS origin (same as Render).
+8. **Vercel** — `VITE_API_URL=https://<api-domain>.up.railway.app`
+
+### Railway vs Render (quick)
+
+| | Railway | Render |
+|---|---------|--------|
+| Multi-service from one repo | 2 services, different `railway.*.toml` | `render.yaml` Blueprint |
+| Agent worker | Second service (always-on on paid) | Background Worker (Starter $7) |
+| Cold start | Less painful on Hobby | Free API spins down ~15 min |
+| Postgres | Plugin, reference `DATABASE_URL` | Blueprint creates DB |
+
+### One-service demo (Railway)
+
+Single service, start command: `bash scripts/start-combined.sh` — API + agent in one container.
