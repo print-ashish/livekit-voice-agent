@@ -2,7 +2,7 @@
 
 from dotenv import load_dotenv
 from livekit import agents
-from livekit.agents import AgentServer, AgentSession
+from livekit.agents import AgentServer, AgentSession, JobExecutorType
 from livekit.plugins import groq
 
 from app.config import AGENT_NAME, GROQ_LLM_MODEL, GROQ_TTS_MODEL, GROQ_TTS_VOICE
@@ -12,10 +12,13 @@ from assistant import VoiceAssistant
 load_dotenv()
 init_db()
 
-# Production defaults pre-warm 4 idle job processes (~1GB+ RAM). Railway free tier OOMs.
+# Linux production defaults to PROCESS (subprocess per job) → OOM on Railway free tier.
+# THREAD runs jobs in the main process (same as local `dev` on Windows).
 server = AgentServer(
+    job_executor_type=JobExecutorType.THREAD,
     num_idle_processes=0,
     initialize_process_timeout=60.0,
+    load_threshold=1.0,
 )
 
 
