@@ -12,7 +12,11 @@ from assistant import VoiceAssistant
 load_dotenv()
 init_db()
 
-server = AgentServer()
+# Production defaults pre-warm 4 idle job processes (~1GB+ RAM). Railway free tier OOMs.
+server = AgentServer(
+    num_idle_processes=0,
+    initialize_process_timeout=60.0,
+)
 
 
 @server.rtc_session(agent_name=AGENT_NAME)
