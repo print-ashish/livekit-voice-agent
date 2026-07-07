@@ -15,7 +15,18 @@ export function clearToken() {
 
 function authHeaders() {
   const token = getToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  const headers = {};
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  // ngrok free domains can return an HTML browser warning unless this header is present.
+  if (API.includes("ngrok-free.dev")) {
+    headers["ngrok-skip-browser-warning"] = "true";
+  }
+
+  return headers;
 }
 
 function authFetch(url, options = {}) {
