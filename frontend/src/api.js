@@ -60,4 +60,13 @@ export async function getLiveKitToken() {
   return res.json();
 }
 
+export async function getTasks() {
+  const res = await authFetch(`${API}/api/tasks`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Failed to load tasks");
+  }
+  return res.json();
+}
+
 export const loginUrl = `${API}/auth/google`;

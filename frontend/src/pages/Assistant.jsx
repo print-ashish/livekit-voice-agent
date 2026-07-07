@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import TaskList from "../components/TaskList";
 import VoiceRoom from "../components/VoiceRoom";
 import { useAuth } from "../useAuth";
 
@@ -11,6 +13,7 @@ const CAPABILITIES = [
 export default function Assistant() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [sessionLive, setSessionLive] = useState(false);
 
   async function handleLogout() {
     try {
@@ -55,7 +58,9 @@ export default function Assistant() {
           ))}
         </div>
 
-        <VoiceRoom />
+        <TaskList fastPoll={sessionLive} />
+
+        <VoiceRoom onSessionLiveChange={setSessionLive} />
       </div>
     </div>
   );

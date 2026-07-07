@@ -42,10 +42,15 @@ AGENT_NAME = os.getenv("AGENT_NAME", "voice-agent")
 # Frontend
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
-# Groq LLM + TTS
+# Groq LLM (STT stays on Groq)
 GROQ_LLM_MODEL = os.getenv("GROQ_LLM_MODEL", "openai/gpt-oss-120b")
-GROQ_TTS_MODEL = os.getenv("GROQ_TTS_MODEL", "canopylabs/orpheus-v1-english")
-GROQ_TTS_VOICE = os.getenv("GROQ_TTS_VOICE", "autumn")
+
+# Cartesia TTS — low latency, separate from Groq rate limits
+CARTESIA_API_KEY = os.getenv("CARTESIA_API_KEY", "")
+CARTESIA_TTS_MODEL = os.getenv("CARTESIA_TTS_MODEL", "sonic-3")
+CARTESIA_TTS_VOICE = os.getenv(
+    "CARTESIA_TTS_VOICE", "6f84f4b8-58a2-430c-8c79-688dad597532"
+)
 
 # Turn-taking latency (LiveKit) — lower = snappier, may cut off slow speakers
 AGENT_ENDPOINTING_MIN = float(os.getenv("AGENT_ENDPOINTING_MIN", "0.2"))

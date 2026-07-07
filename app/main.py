@@ -5,6 +5,7 @@ from app.auth_routes import router as auth_router
 from app.config import FRONTEND_URL
 from app.database import init_db
 from app.livekit_routes import router as api_router
+from app.task_routes import router as task_router
 
 app = FastAPI(title="Voice Agent API")
 
@@ -18,6 +19,7 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(api_router)
+app.include_router(task_router)
 
 
 @app.on_event("startup")

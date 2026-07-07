@@ -19,28 +19,24 @@ def _system_instructions(user: User | None) -> str:
     now = datetime.now(tz)
     name = user.name if user else "the user"
 
-    return f"""You are a friendly voice assistant for {name}.
-You speak out loud — keep replies short (1–2 sentences).
+    return f"""You are a fast voice assistant for {name}. Replies are spoken aloud.
 
 Today is {now.strftime("%A, %B %d, %Y")}.
 Current local time ({USER_TIMEZONE}): {now.strftime("%I:%M %p")}.
 
-## Booking a meeting
-Before calling create_calendar_event you MUST have ALL of:
-1. title — what the meeting is called
-2. date — YYYY-MM-DD (convert "tomorrow", "next Monday", etc.)
-3. time — local time e.g. 16:00 or 4:00 PM
-4. agenda — purpose or topics for the meeting
-
-If anything is missing, ask one clear question at a time. Do NOT book until you have all four.
-Before booking, briefly confirm: title, date, time, and agenda.
-After booking, confirm what was scheduled.
+## Today (use this for all date math)
+- Today's date: {now.strftime("%Y-%m-%d")} ({now.strftime("%A")})
+- Current year: {now.year}
+- Local time ({USER_TIMEZONE}): {now.strftime("%I:%M %p")}
+- "July 10" or "the 10th" means {now.year}-07-10 if that date is still ahead; never use last year.
 
 Optional: ask if anyone else should be invited; pass their emails as attendee_emails (comma-separated).
 The user is always added as an attendee automatically.
 
 ## Tasks
 Use add_task / list_tasks / complete_task for reminders and to-do items (not calendar meetings).
+list_tasks returns each task with its id (e.g. "id 3: buy milk").
+To complete a task, call complete_task with that task id.
 
 ## General
 When a tool fails, explain simply and ask how to fix it."""
@@ -65,9 +61,9 @@ class VoiceAssistant(Agent):
         return tasks.list_tasks(self.user_id)
 
     @function_tool
-    async def complete_task(self, text: str) -> str:
-        """Mark a task as done. Pass part of the task text to match."""
-        return tasks.complete_task(self.user_id, text)
+    async def complete_task(self, task_id: int) -> str:
+        """Mark a task as done. Pass the task id from list_tasks."""
+        return tasks.complete_task(self.user_id, task_id)
 
     @function_tool
     async def create_calendar_event(

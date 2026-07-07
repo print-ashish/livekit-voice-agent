@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from livekit import agents
 from livekit.agents import AgentServer, AgentSession, JobExecutorType, inference
 from livekit.agents.voice.room_io import RoomOptions, TextOutputOptions
-from livekit.plugins import groq
+from livekit.plugins import cartesia, groq
 
 from app.config import (
     AGENT_ENDPOINTING_MAX,
@@ -13,9 +13,9 @@ from app.config import (
     AGENT_PREEMPTIVE_TTS,
     AGENT_VAD_ACTIVATION,
     AGENT_VAD_MIN_SILENCE,
+    CARTESIA_TTS_MODEL,
+    CARTESIA_TTS_VOICE,
     GROQ_LLM_MODEL,
-    GROQ_TTS_MODEL,
-    GROQ_TTS_VOICE,
 )
 from app.database import init_db
 from assistant import VoiceAssistant
@@ -63,7 +63,7 @@ async def voice_agent(ctx: agents.JobContext):
         ),
         stt=groq.STT(model="whisper-large-v3-turbo", language="en"),
         llm=groq.LLM(model=GROQ_LLM_MODEL),
-        tts=groq.TTS(model=GROQ_TTS_MODEL, voice=GROQ_TTS_VOICE),
+        tts=cartesia.TTS(model=CARTESIA_TTS_MODEL, voice=CARTESIA_TTS_VOICE),
         turn_handling=TURN_HANDLING,
     )
 
@@ -75,7 +75,7 @@ async def voice_agent(ctx: agents.JobContext):
         ),
     )
     await session.generate_reply(
-        instructions="Greet the user by name if you know it, and ask how you can help."
+        instructions="Greet the user briefly by name if you know it. One sentence. Ask how you can help."
     )
 
 

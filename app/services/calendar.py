@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from google.oauth2.credentials import Credentials
@@ -40,12 +40,28 @@ def _parse_date_time(date: str, time: str) -> datetime:
     for fmt in ("%H:%M", "%I:%M %p", "%I %p"):
         try:
             parsed_time = datetime.strptime(cleaned_time, fmt).time()
-            parsed_date = datetime.strptime(date.strip(), "%Y-%m-%d").date()
+            parsed_date = _normalize_booking_date(date.strip(), datetime.now(tz))
             return datetime.combine(parsed_date, parsed_time, tzinfo=tz)
         except ValueError:
             continue
 
     raise ValueError(f"Could not parse date '{date}' and time '{time}'.")
+
+
+def _normalize_booking_date(date_str: str, now: datetime) -> date:
+    """Fix common LLM mistake: wrong year (e.g. 2025-07-10 when today is 2026-07-08)."""
+    parsed = datetime.strptime(date_str, "%Y-%m-%d").date()
+    today = now.date()
+
+    if parsed.year < today.year:
+        parsed = parsed.replace(year=today.year)
+
+    if parsed < today:
+        next_year = parsed.replace(year=parsed.year + 1)
+        if next_year >= today:
+            return next_year
+
+    return parsed
 
 
 def create_event(
@@ -94,7 +110,11 @@ def create_event(
         return str(e)
 
     if start < datetime.now(ZoneInfo(USER_TIMEZONE)) - timedelta(minutes=5):
-        return "That date and time are in the past. Ask the user for a future slot."
+        return (
+            f"That slot ({date} {time}) is in the past. "
+            f"Today is {datetime.now(ZoneInfo(USER_TIMEZONE)).strftime('%Y-%m-%d')}. "
+            "Ask for a future date and time."
+        )
 
     end = start + timedelta(minutes=duration_minutes)
 
