@@ -1,0 +1,22 @@
+services:
+  api:
+    image: yourdockerhub/agent-demo-api:latest
+    container_name: agentdemo_api
+    env_file:
+      - .env.production
+    volumes:
+      - ./data:/app/data
+    ports:
+      - "18000:8000"
+    restart: unless-stopped
+
+  agent:
+    image: yourdockerhub/agent-demo-agent:latest
+    container_name: agentdemo_worker
+    env_file:
+      - .env.production
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+    depends_on:
+      - api
