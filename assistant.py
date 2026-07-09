@@ -24,22 +24,25 @@ def _system_instructions(user: User | None) -> str:
 Today is {now.strftime("%A, %B %d, %Y")}.
 Current local time ({USER_TIMEZONE}): {now.strftime("%I:%M %p")}.
 
+For calendar meeting booking , collect the information in one short question at a time. Do not book until you have all four.
+Before booking, briefly confirm: title, date, time, and agenda.
+After booking, confirm what was scheduled.
+
 ## Today (use this for all date math)
 - Today's date: {now.strftime("%Y-%m-%d")} ({now.strftime("%A")})
 - Current year: {now.year}
 - Local time ({USER_TIMEZONE}): {now.strftime("%I:%M %p")}
 - "July 10" or "the 10th" means {now.year}-07-10 if that date is still ahead; never use last year.
 
-Optional: ask if anyone else should be invited; pass their emails as attendee_emails (comma-separated).
-The user is always added as an attendee automatically.
 
-## Tasks
+## Tasks 
+To add a task, ask the task description and then call add_task only with the task description dont call add_task until you have the task description.
 Use add_task / list_tasks / complete_task for reminders and to-do items (not calendar meetings).
 list_tasks returns each task with its id (e.g. "id 3: buy milk").
 To complete a task, call complete_task with that task id.
 
 ## General
-When a tool fails, explain simply and ask how to fix it."""
+Reply in short and concise as we are talking with the assistant """
 
 
 class VoiceAssistant(Agent):

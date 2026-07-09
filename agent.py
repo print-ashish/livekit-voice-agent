@@ -13,6 +13,7 @@ from app.config import (
     AGENT_PREEMPTIVE_TTS,
     AGENT_VAD_ACTIVATION,
     AGENT_VAD_MIN_SILENCE,
+    CARTESIA_STT_MODEL,
     CARTESIA_TTS_MODEL,
     CARTESIA_TTS_VOICE,
     GROQ_LLM_MODEL,
@@ -31,10 +32,14 @@ server = AgentServer(
 )
 
 TURN_HANDLING = {
-    "turn_detection": "vad",
+    "turn_detection": "stt",
     "endpointing": {
         "min_delay": AGENT_ENDPOINTING_MIN,
         "max_delay": AGENT_ENDPOINTING_MAX,
+    },
+    "interruption": {
+        "enabled": True,
+        "mode": "adaptive",
     },
     "preemptive_generation": {
         "enabled": True,
@@ -61,7 +66,7 @@ async def voice_agent(ctx: agents.JobContext):
             activation_threshold=AGENT_VAD_ACTIVATION,
             min_silence_duration=AGENT_VAD_MIN_SILENCE,
         ),
-        stt=groq.STT(model="whisper-large-v3-turbo", language="en"),
+        stt=cartesia.STT(model=CARTESIA_STT_MODEL, language="en"),
         llm=groq.LLM(model=GROQ_LLM_MODEL),
         tts=cartesia.TTS(model=CARTESIA_TTS_MODEL, voice=CARTESIA_TTS_VOICE),
         turn_handling=TURN_HANDLING,

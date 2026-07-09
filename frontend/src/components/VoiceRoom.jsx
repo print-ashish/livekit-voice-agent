@@ -8,7 +8,7 @@ const STATES = {
   idle: { label: "Ready", detail: "Tap the mic to start a voice session" },
   connecting: { label: "Connecting…", detail: "Joining LiveKit room" },
   connected: { label: "Waiting for agent", detail: "Agent is joining the room" },
-  listening: { label: "Live", detail: "Speak naturally — book meetings, tasks, schedule" },
+  listening: { label: "Live", detail: "Speak naturally — you can interrupt anytime" },
   error: { label: "Error", detail: "" },
 };
 
@@ -18,12 +18,20 @@ const MIC_CAPTURE_OPTIONS = {
   channelCount: 1,
   echoCancellation: true,
   noiseSuppression: true,
-  // AGC can boost speaker bleed on mobile and worsen echo loops.
   autoGainControl: !IS_MOBILE,
 };
 
-// Brief hold after agent stops so speaker tail is not picked up.
-const AGENT_UNMUTE_DELAY_MS = 500;
+async function applyMicEchoCancellation(room) {
+  const pub = room.localParticipant.getTrackPublication(Track.Source.Microphone);
+  const mediaTrack = pub?.track?.mediaStreamTrack;
+  if (mediaTrack?.applyConstraints) {
+    await mediaTrack.applyConstraints({
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: !IS_MOBILE,
+    });
+  }
+}
 
 function upsertTranscript(messages, segment, role) {
   const idx = messages.findIndex((m) => m.id === segment.id);
@@ -47,70 +55,6 @@ export default function VoiceRoom({ onSessionLiveChange }) {
   const [messages, setMessages] = useState([]);
   const roomRef = useRef(null);
   const audioRef = useRef(null);
-  const micGatedRef = useRef(false);
-  const unmuteTimerRef = useRef(null);
-  const agentMuteUntilRef = useRef(0);
-
-  function clearUnmuteTimer() {
-    if (unmuteTimerRef.current) {
-      clearTimeout(unmuteTimerRef.current);
-      unmuteTimerRef.current = null;
-    }
-  }
-
-  async function setMicGated(gated) {
-    const room = roomRef.current;
-    if (!room || micGatedRef.current === gated) return;
-    micGatedRef.current = gated;
-
-    let pub = room.localParticipant.getTrackPublication(Track.Source.Microphone);
-    if (!pub?.track && !gated) {
-      await room.localParticipant.setMicrophoneEnabled(true, MIC_CAPTURE_OPTIONS);
-      pub = room.localParticipant.getTrackPublication(Track.Source.Microphone);
-    }
-    if (!pub?.track) return;
-
-    if (gated) pub.track.mute();
-    else pub.track.unmute();
-  }
-
-  function scheduleUnmute(delayMs = AGENT_UNMUTE_DELAY_MS) {
-    const until = Date.now() + delayMs;
-    agentMuteUntilRef.current = Math.max(agentMuteUntilRef.current, until);
-    clearUnmuteTimer();
-    unmuteTimerRef.current = setTimeout(() => {
-      if (Date.now() >= agentMuteUntilRef.current) {
-        void setMicGated(false);
-      }
-    }, until - Date.now());
-  }
-
-  function muteForAgentSpeech() {
-    clearUnmuteTimer();
-    agentMuteUntilRef.current = Date.now() + AGENT_UNMUTE_DELAY_MS;
-    void setMicGated(true);
-  }
-
-  function onActiveSpeakersChanged(speakers) {
-    const agentSpeaking = speakers.some((participant) => !participant.isLocal);
-    const userSpeaking = speakers.some((participant) => participant.isLocal);
-
-    if (agentSpeaking) {
-      muteForAgentSpeech();
-      return;
-    }
-
-    if (userSpeaking) {
-      clearUnmuteTimer();
-      agentMuteUntilRef.current = 0;
-      void setMicGated(false);
-      return;
-    }
-
-    if (micGatedRef.current) {
-      scheduleUnmute(AGENT_UNMUTE_DELAY_MS);
-    }
-  }
 
   function setVoiceState(key, extraDetail) {
     setState(key);
@@ -124,7 +68,7 @@ export default function VoiceRoom({ onSessionLiveChange }) {
     el.playsInline = true;
     el.setAttribute("playsinline", "true");
     el.setAttribute("webkit-playsinline", "true");
-    el.volume = IS_MOBILE ? 0.75 : 0.9;
+    el.volume = IS_MOBILE ? 0.5 : 0.85;
     el.id = `audio-${label}`;
     audioRef.current.appendChild(el);
   }
@@ -135,15 +79,6 @@ export default function VoiceRoom({ onSessionLiveChange }) {
     setMessages((prev) =>
       segments.reduce((acc, segment) => upsertTranscript(acc, segment, role), prev),
     );
-
-    if (!participant.isLocal) {
-      const allFinal = segments.every((segment) => segment.final);
-      if (allFinal) {
-        scheduleUnmute(AGENT_UNMUTE_DELAY_MS + 200);
-      } else {
-        muteForAgentSpeech();
-      }
-    }
   }
 
   async function connect() {
@@ -178,18 +113,14 @@ export default function VoiceRoom({ onSessionLiveChange }) {
 
       room.on(RoomEvent.TranscriptionReceived, handleTranscription);
 
-      room.on(RoomEvent.ActiveSpeakersChanged, onActiveSpeakersChanged);
-
       room.on(RoomEvent.Disconnected, () => {
-        clearUnmuteTimer();
-        micGatedRef.current = false;
-        agentMuteUntilRef.current = 0;
         setVoiceState("idle");
       });
 
       await room.startAudio();
       await room.connect(url, token);
       await room.localParticipant.setMicrophoneEnabled(true, MIC_CAPTURE_OPTIONS);
+      await applyMicEchoCancellation(room);
     } catch (err) {
       setVoiceState("error", err.message);
       console.error(err);
@@ -197,9 +128,6 @@ export default function VoiceRoom({ onSessionLiveChange }) {
   }
 
   async function disconnect() {
-    clearUnmuteTimer();
-    micGatedRef.current = false;
-    agentMuteUntilRef.current = 0;
     if (roomRef.current) await roomRef.current.disconnect();
     roomRef.current = null;
     setVoiceState("idle");

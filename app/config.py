@@ -42,26 +42,27 @@ AGENT_NAME = os.getenv("AGENT_NAME", "voice-agent")
 # Frontend
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
-# Groq LLM (STT stays on Groq)
+# Groq LLM only (STT moved to Cartesia ink-2)
 GROQ_LLM_MODEL = os.getenv("GROQ_LLM_MODEL", "openai/gpt-oss-120b")
 
-# Cartesia TTS — low latency, separate from Groq rate limits
+# Cartesia STT + TTS
 CARTESIA_API_KEY = os.getenv("CARTESIA_API_KEY", "")
+CARTESIA_STT_MODEL = os.getenv("CARTESIA_STT_MODEL", "ink-2")
 CARTESIA_TTS_MODEL = os.getenv("CARTESIA_TTS_MODEL", "sonic-3")
 CARTESIA_TTS_VOICE = os.getenv(
     "CARTESIA_TTS_VOICE", "6f84f4b8-58a2-430c-8c79-688dad597532"
 )
 
-# Turn-taking latency (LiveKit) — lower = snappier, may cut off slow speakers
-AGENT_ENDPOINTING_MIN = float(os.getenv("AGENT_ENDPOINTING_MIN", "0.2"))
-AGENT_ENDPOINTING_MAX = float(os.getenv("AGENT_ENDPOINTING_MAX", "0.8"))
+# Turn-taking (LiveKit)
+AGENT_ENDPOINTING_MIN = float(os.getenv("AGENT_ENDPOINTING_MIN", "0.35"))
+AGENT_ENDPOINTING_MAX = float(os.getenv("AGENT_ENDPOINTING_MAX", "1.2"))
 AGENT_PREEMPTIVE_TTS = os.getenv("AGENT_PREEMPTIVE_TTS", "true").lower() in (
     "1",
     "true",
     "yes",
 )
-AGENT_VAD_ACTIVATION = float(os.getenv("AGENT_VAD_ACTIVATION", "0.4"))
-AGENT_VAD_MIN_SILENCE = float(os.getenv("AGENT_VAD_MIN_SILENCE", "0.25"))
+AGENT_VAD_ACTIVATION = float(os.getenv("AGENT_VAD_ACTIVATION", "0.45"))
+AGENT_VAD_MIN_SILENCE = float(os.getenv("AGENT_VAD_MIN_SILENCE", "0.3"))
 
 # Calendar / voice assistant timezone
 USER_TIMEZONE = os.getenv("USER_TIMEZONE", "Asia/Kolkata")
